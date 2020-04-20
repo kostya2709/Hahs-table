@@ -92,6 +92,8 @@ Attention! This function is to be required only from #define DUMP(); .
 */
 	int Delete (int location);
 
+	int Delete (Type element);
+
 /*! This function changes the allocated memory.
 @param[in] Pointer to the list.
 @param [in] New size of list.
@@ -106,6 +108,26 @@ Attention! This function is to be required only from #define DUMP(); .
 	int List_Dump_Graph () const;
 };
 
+template <typename Type>
+class Hash_Table
+{
+public:
+
+	Hash_Table()
+	{
+		this->array = new List<Type>* [max_elem];
+	};
+
+	int max_elem = 1000;
+
+	List <Type>** array;
+
+	void insert (Type new_elem);
+	void remove (Type rem_elem);
+	Type* find (Type elem);
+	int hash_function (Type elem);
+
+};
 
 
 

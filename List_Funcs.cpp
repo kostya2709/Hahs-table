@@ -6,7 +6,7 @@ using std::cout;
 #include <iostream>
 #endif
 
-#ifndef List_Header
+#ifndef List_Header_h
 #include "List_Header.h"
 #endif
 
@@ -158,6 +158,19 @@ int List <Type>::Insert_Back (Type elem)
 }
 
 template <typename Type>
+int List <Type>::Delete (Type elem)
+{
+    for (int i = 0; i < this->size; ++i)
+        if (this->data[i] == elem)
+        {
+            this->Delete (i);
+            return 0;
+        }
+
+    return 1;
+}
+
+template <typename Type>
 int List <Type>::Delete (int location)
 {
 
@@ -197,7 +210,7 @@ int List <Type>::Delete (int location)
         *(list1->next + prev_el) = next_el;
     }
 
-    *(list1->data + location) = 0;
+    Make_Empty (list1->data + location);
 
     *(list1->next + location) = list1->free_;
     Make_Poison (list1->prev + location);
@@ -362,13 +375,13 @@ int List <Type>::List_Dump_Graph () const
 
         for (i = 0; i < list1->max_size - 1; i++)
         {
-            if (*(list1->data + i + 1) == EMPTY)
+            if (*(list1->data + i + 1) == "EMPTY")
                     fprintf (f, "node [fillcolor=\"green\"];\n");
 
             fprintf (f, "\"box%d\"  [label = \"adress = %d|value = " PRINTF_Type "|next = %d|prev = %d\"];\n\n",
                 i + temp, i + 1, *(list1->data + i + 1), *(list1->next + i + 1), *(list1->prev + i + 1));
 
-            if (*(list1->data + i + 1) == EMPTY)
+            if (*(list1->data + i + 1) == "EMPTY")
                     fprintf (f, "node [fillcolor=\"lightblue\"];\n");
 
         }
@@ -425,9 +438,97 @@ int List <Type>::List_Dump_Graph () const
 
     system ("dot -Tpng graph_dump.gv -o list_dump.png");
 
-    system ("pause");
+    //system ("pause");
 
     return 0;
+}
+
+
+
+
+
+template <typename Type>
+void Hash_Table <Type>::insert (Type new_elem)
+{
+    int value = this->hash_function (new_elem);
+
+    if (value > this->max_elem)
+    {
+        printf ("Hash-value is too big for the reserved array.\n");
+        return;
+    }
+
+    if (this->array[value] == NULL)
+    {
+        List <Type>* list = new List <Type>;
+        this->array[value] = list;
+    }
+
+    this->array[value]->Insert_After (0, new_elem);
+}
+
+template <typename Type>
+int compare_elem (Type elem1, Type elem2)
+{
+    return elem1 == elem2;
+}
+
+template <>
+int compare_elem (std::string elem1, std::string elem2)
+{
+    return elem1 == elem2;
+}
+template <typename Type>
+void Hash_Table <Type>::remove (Type new_elem)
+{
+    int value = this->hash_function (new_elem);
+
+    if (value < 0)
+    {
+        printf ("Inappropriate value of the element to remove.\n");
+        return;
+    }
+
+    List<Type>* list1 = this->array[value];
+    int size = list1->size;
+
+    for (int i = 1; i <= size; ++i)
+    if (compare_elem (list1->data[i], new_elem))
+        list1->Delete (i);
+}
+
+
+template <typename Type>
+Type* Hash_Table<Type>::find (Type elem)
+{
+    int index = this->hash_function (elem);
+
+    List <Type>* list1 = this->array[index];
+    int size = list1->size;
+
+    for (int i = 1; i <= size; ++i)
+        if (compare_elem (list1->data[i], elem))
+            return &(list1->data[i]);
+
+    return NULL;
+}
+
+template <typename Type>
+int Hash_Table <Type>::hash_function (Type elem)
+{
+    return 0;
+}
+
+template <>
+int Hash_Table <std::string>::hash_function (std::string elem)
+{
+    int size = elem.size();
+    int hash = 0;
+
+    for (int i = 0; i < size; ++i)
+        hash += elem.data()[i];
+
+    return hash;
 }
 
 

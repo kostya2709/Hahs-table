@@ -9,11 +9,19 @@ int main()
     
     List <std::string> list;
 
-    DUMP (list);
-
     list.Insert_After (0, "hello");
 
     DUMP (list);
+
+    Hash_Table<std::string> hash_table;
+    hash_table.insert ("hello\n");
+
+    cout << hash_table.find ("hello\n") << "\n";
+
+    hash_table.remove ("hello\n");
+
+   cout << hash_table.find ("hello\n") << "\n";
+    
 
     return 0;
 }
