@@ -22,6 +22,12 @@ void Make_Poison <std::string> (std::string* ptr)
     *ptr = "POISON";
 }
 
+template <>
+void Make_Poison (char** ptr)
+{ 
+    *ptr = NULL;
+}
+
 template <typename Type>
 void Make_Empty (Type* ptr)
 { 
@@ -32,6 +38,12 @@ template <>
 void Make_Empty <std::string> (std::string* ptr)
 { 
     *ptr = "EMPTY";
+}
+
+template <>
+void Make_Empty (char** ptr)
+{ 
+    *ptr = NULL;
 }
 
 
@@ -445,6 +457,39 @@ int List <Type>::List_Dump_Graph () const
 
 
 
+template <typename Type>
+int compare_elem (Type elem1, Type elem2)
+{
+    return elem1 == elem2;
+}
+
+template <>
+int compare_elem (std::string elem1, std::string elem2)
+{
+    return elem1 == elem2;
+}
+
+template <>
+int compare_elem (char* elem1, char* elem2)
+{
+    while (true)
+    {
+        if ((*elem1 == 0 && *elem2 != 0 )|| (*elem1 != 0 && *elem2 == 0))
+            return 0;
+
+        if (*elem1 == 0 && *elem2 == 0)
+            return 1;
+
+        if (*elem1 != *elem2)
+            return 0;
+        
+        elem1++;
+        elem2++;
+        
+    }
+
+    return 0;
+}
 
 
 template <typename Type>
@@ -464,20 +509,23 @@ void Hash_Table <Type>::insert (Type new_elem)
         this->array[value] = list;
     }
 
-    this->array[value]->Insert_After (0, new_elem);
+    int size = this->array[value]->size;
+    Type* array = this->array[value]->data;
+    int same = 0;
+
+    for (int i = 1; i <= size; ++i)
+        if (compare_elem (new_elem, array[i]))
+        {
+            same = 1;
+            break;
+        }
+
+    if (!same)
+        this->array[value]->Insert_After (0, new_elem);
 }
 
-template <typename Type>
-int compare_elem (Type elem1, Type elem2)
-{
-    return elem1 == elem2;
-}
 
-template <>
-int compare_elem (std::string elem1, std::string elem2)
-{
-    return elem1 == elem2;
-}
+
 template <typename Type>
 void Hash_Table <Type>::remove (Type new_elem)
 {
@@ -516,7 +564,15 @@ Type* Hash_Table<Type>::find (Type elem)
 template <typename Type>
 int Hash_Table <Type>::hash_function (Type elem)
 {
+    printf ("WRONG\n");
     return 0;
+}
+
+template <>
+int Hash_Table <char*>::hash_function (char* elem)
+{
+    int result = this->func_array[this->func_num] (elem);
+    return result;
 }
 
 template <>

@@ -14,6 +14,8 @@ const int POISON = -666;
 
 const int EMPTY = -27;
 
+const int table_height = 997;
+
 template <typename Type>
 struct List
 {
@@ -108,17 +110,69 @@ Attention! This function is to be required only from #define DUMP(); .
 	int List_Dump_Graph () const;
 };
 
+int hash_default (char* str)
+{
+	return 1;
+}
+
+int hash_length (char* str)
+{
+	int result = 0;
+    
+    while (*str != 0)
+    {
+        str++;
+        result++;
+    }
+
+	return result;
+}
+
+int hash_ascii_sum (char* str)
+{
+	int result = 0;
+
+    while (*str != 0)
+    {
+        result += *str;
+        str++;
+    }
+
+	return result % table_height;
+}
+
+int hash_ascii_length (char* str)
+{
+	int length = hash_length (str);
+	int sum = hash_ascii_sum (str);
+	
+	return sum / length;
+}
+
+
 template <typename Type>
 class Hash_Table
 {
 public:
 
+	enum {default_f, ascii_sum, length, ascii_length, size};
+
 	Hash_Table()
 	{
 		this->array = new List<Type>* [max_elem];
+		
+		func_array[0] = hash_default;
+		func_array[1] = hash_ascii_sum;
+		func_array[2] = hash_length;
+		func_array[3] = hash_ascii_length;
 	};
 
-	int max_elem = 1000;
+	Hash_Table (int func_num_in) : Hash_Table() {func_num = func_num_in;}
+
+	int func_num = 0;
+	int (*func_array [size])(char* param);
+
+	int max_elem = table_height;
 
 	List <Type>** array;
 
