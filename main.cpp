@@ -3,7 +3,7 @@
 #include "List_Funcs.cpp"
 #include <string>
 
-const int hash_num = 4;
+const int hash_num = 6;
 
 char* Download_Text (Hash_Table<char*> hash_table [hash_num]);
 void Write_Statistics (const Hash_Table<char*> hash_table [hash_num]);
@@ -12,15 +12,16 @@ int main()
 {
     Hash_Table<char*> hash_array [hash_num];
     
-    hash_array[0] = (Hash_Table <char*>::default_f);
-    hash_array[1] = (Hash_Table <char*>::ascii_sum);
-    hash_array[2] = (Hash_Table <char*>::length);
-    hash_array[3] = (Hash_Table <char*>::ascii_length);
+    hash_array[0] = Hash_Table <char*> (Hash_Table <char*>::default_f);
+    hash_array[1] = Hash_Table <char*> (Hash_Table <char*>::ascii_sum);
+    hash_array[2] = Hash_Table <char*> (Hash_Table <char*>::length);
+    hash_array[3] = Hash_Table <char*> (Hash_Table <char*>::ascii_length);
+    hash_array[4] = Hash_Table <char*> (Hash_Table <char*>::xor_f);
+    hash_array[5] = Hash_Table <char*> (Hash_Table <char*>::murmur);
     
     char* file = Download_Text (hash_array);
 
     Write_Statistics (hash_array);
-    printf ("OK\n");
 
     free (file);
 
@@ -63,9 +64,8 @@ char* Download_Text (Hash_Table<char*> hash_table [hash_num])
 
         *cur_ptr = '\0';
 
-        for (int i = 0; i < hash_num; ++i)
+        for (int i = 0; i < 6; ++i)
             hash_table[i].insert (cur_start);
-
 
         while (!isalpha (*cur_ptr))
             cur_ptr++;
@@ -82,7 +82,7 @@ void Write_Statistics (const Hash_Table<char*> hash_table [hash_num])
 
     for (int i = 0; i < hash_table[0].max_elem; ++i)
     {
-        for (int j = 0; j < 4; ++j)
+        for (int j = 0; j < hash_num; ++j)
             if (hash_table[j].array[i])
                 fprintf (f, "%d, %d, , ", i, hash_table[j].array[i]->size);
             else 

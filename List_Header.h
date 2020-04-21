@@ -110,12 +110,12 @@ Attention! This function is to be required only from #define DUMP(); .
 	int List_Dump_Graph () const;
 };
 
-int hash_default (char* str)
+unsigned int hash_default (const char* str)
 {
 	return 1;
 }
 
-int hash_length (char* str)
+unsigned int hash_length (const char* str)
 {
 	int result = 0;
     
@@ -128,7 +128,7 @@ int hash_length (char* str)
 	return result;
 }
 
-int hash_ascii_sum (char* str)
+unsigned int hash_ascii_sum (const char* str)
 {
 	int result = 0;
 
@@ -141,7 +141,7 @@ int hash_ascii_sum (char* str)
 	return result % table_height;
 }
 
-int hash_ascii_length (char* str)
+unsigned int hash_ascii_length (const char* str)
 {
 	int length = hash_length (str);
 	int sum = hash_ascii_sum (str);
@@ -149,13 +149,68 @@ int hash_ascii_length (char* str)
 	return sum / length;
 }
 
+unsigned int hash_xor (const char* str)
+{
+	unsigned int result = 0;
+
+	char* ptr = (char*) str;
+	while (*ptr != 0)
+	{
+		result ^= *ptr;
+		result >> 1;
+		++ptr;
+	}
+
+	return result;
+}
+
+
+unsigned int MurmurHash2 (const char* str)
+{
+	int len = hash_length (str);
+	unsigned int seed = 272727;
+
+	const unsigned int m = 0x5bd1e995;
+	const int r = 24;
+
+	char* ptr = (char*) str;
+	unsigned int h = seed ^ len;
+
+	while (len >= 4)
+	{
+		unsigned int k = *(unsigned int *)ptr;
+
+		k *= m; 
+		k ^= k >> r; 
+		k *= m; 
+		
+		h *= m; 
+		h ^= k;
+
+		ptr += 4;
+		len -= 4;
+	}
+
+	switch(len)
+	{
+	case 3: h ^= ptr[2] << 16;
+	case 2: h ^= ptr[1] << 8;
+	case 1: h ^= ptr[0];
+	        h *= m;
+	};
+	h ^= h >> 13;
+	h *= m;
+	h ^= h >> 15;
+
+	return h % table_height;
+} 
 
 template <typename Type>
 class Hash_Table
 {
 public:
 
-	enum {default_f, ascii_sum, length, ascii_length, size};
+	enum {default_f, ascii_sum, length, ascii_length, xor_f, murmur, size};
 
 	Hash_Table()
 	{
@@ -165,12 +220,14 @@ public:
 		func_array[1] = hash_ascii_sum;
 		func_array[2] = hash_length;
 		func_array[3] = hash_ascii_length;
+		func_array[4] = hash_xor;
+		func_array[5] = MurmurHash2;
 	};
 
-	Hash_Table (int func_num_in) : Hash_Table() {func_num = func_num_in;}
+	explicit Hash_Table (int func_num_in) : Hash_Table() {func_num = func_num_in;}
 
-	int func_num = 0;
-	int (*func_array [size])(char* param);
+	int func_num = 5;
+	unsigned int (*func_array [size])(const char* param);
 
 	int max_elem = table_height;
 
