@@ -1,18 +1,22 @@
 FNAME=hash_table
 #LIBNAME=List_Funcs.cpp
-CFLAGS= -c -Wall
+CFLAGS= -c -Wall -msse4.2 -O0
 LFLAGS= -o
+ASM= strcmp
 
-all: $(FNAME)
+all: $(FNAME) clean
 
-$(FNAME): $(FNAME).o
-	@g++ $(LFLAGS) $(FNAME) main.o
+$(FNAME): $(FNAME).o $(ASM).o
+	@g++ $(LFLAGS) $(FNAME) main.o $(ASM).o
 	@./$(FNAME)
 
 $(FNAME).o:
 	@g++ $(CFLAGS)  main.cpp
 
+$(ASM).o:
+	@nasm -f elf64 $(ASM).s
+
 
 
 clean:
-	@rm -rf $(FNAME) *.o
+	@rm -rf *.o

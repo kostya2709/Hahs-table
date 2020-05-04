@@ -109,120 +109,16 @@ Attention! This function is to be required only from #define DUMP(); .
 */
 	int List_Dump_Graph () const;
 };
-
-unsigned int hash_default (const char* str)
-{
-	return 1;
-}
-
-unsigned int hash_length (const char* str)
-{
-	int result = 0;
-    
-    while (*str != 0)
-    {
-        str++;
-        result++;
-    }
-
-	return result;
-}
-
-unsigned int hash_ascii_sum (const char* str)
-{
-	int result = 0;
-
-    while (*str != 0)
-    {
-        result += *str;
-        str++;
-    }
-
-	return result % table_height;
-}
-
-unsigned int hash_ascii_length (const char* str)
-{
-	int length = hash_length (str);
-	int sum = hash_ascii_sum (str);
-	
-	return sum / length;
-}
-
-unsigned int hash_xor (const char* str)
-{
-	unsigned int result = 0;
-
-	char* ptr = (char*) str;
-	while (*ptr != 0)
-	{
-		result ^= *ptr;
-		result >> 1;
-		++ptr;
-	}
-
-	return result;
-}
-
-
-unsigned int MurmurHash2 (const char* str)
-{
-	int len = hash_length (str);
-	unsigned int seed = 272727;
-
-	const unsigned int m = 0x5bd1e995;
-	const int r = 24;
-
-	char* ptr = (char*) str;
-	unsigned int h = seed ^ len;
-
-	while (len >= 4)
-	{
-		unsigned int k = *(unsigned int *)ptr;
-
-		k *= m; 
-		k ^= k >> r; 
-		k *= m; 
-		
-		h *= m; 
-		h ^= k;
-
-		ptr += 4;
-		len -= 4;
-	}
-
-	switch(len)
-	{
-	case 3: h ^= ptr[2] << 16;
-	case 2: h ^= ptr[1] << 8;
-	case 1: h ^= ptr[0];
-	        h *= m;
-	};
-	h ^= h >> 13;
-	h *= m;
-	h ^= h >> 15;
-
-	return h % table_height;
-} 
+ 
 
 template <typename Type>
 class Hash_Table
 {
 public:
 
-	enum {default_f, ascii_sum, length, ascii_length, xor_f, murmur, size};
+	enum {default_f, ascii_sum, length, ascii_length, xor_f, murmur, crc32, size};
 
-	Hash_Table()
-	{
-		this->array = new List<Type>* [max_elem];
-		
-		func_array[0] = hash_default;
-		func_array[1] = hash_ascii_sum;
-		func_array[2] = hash_length;
-		func_array[3] = hash_ascii_length;
-		func_array[4] = hash_xor;
-		func_array[5] = MurmurHash2;
-	};
+	Hash_Table();
 
 	explicit Hash_Table (int func_num_in) : Hash_Table() {func_num = func_num_in;}
 

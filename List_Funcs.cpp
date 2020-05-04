@@ -1,4 +1,6 @@
 #include <type_traits>
+#include <nmmintrin.h>
+#include <string.h>
 
 using std::cout;
 
@@ -9,6 +11,8 @@ using std::cout;
 #ifndef List_Header_h
 #include "List_Header.h"
 #endif
+
+extern "C" bool _fast_strcmp (const char*, const char*);
 
 template <typename Type>
 void Make_Poison (Type* ptr)
@@ -472,23 +476,9 @@ int compare_elem (std::string elem1, std::string elem2)
 template <>
 int compare_elem (char* elem1, char* elem2)
 {
-    while (true)
-    {
-        if ((*elem1 == 0 && *elem2 != 0 )|| (*elem1 != 0 && *elem2 == 0))
-            return 0;
+    //return strcmp (elem1, elem2);
 
-        if (*elem1 == 0 && *elem2 == 0)
-            return 1;
-
-        if (*elem1 != *elem2)
-            return 0;
-        
-        elem1++;
-        elem2++;
-        
-    }
-
-    return 0;
+    return _fast_strcmp (elem1, elem2);
 }
 
 
@@ -514,7 +504,7 @@ void Hash_Table <Type>::insert (Type new_elem)
     int same = 0;
 
     for (int i = 1; i <= size; ++i)
-        if (compare_elem (new_elem, array[i]))
+        if (!compare_elem (new_elem, array[i]))
         {
             same = 1;
             break;
@@ -524,6 +514,189 @@ void Hash_Table <Type>::insert (Type new_elem)
         this->array[value]->Insert_After (0, new_elem);
 }
 
+unsigned int hash_default (const char* str)
+{
+	return 1;
+}
+
+unsigned int hash_length (const char* str)
+{
+	int result = 0;
+   /* 
+    while (*str != 0)
+    {
+        str++;
+        result++;
+    }*/
+
+
+    __asm__ volatile (   
+                ".intel_syntax noprefix \n\t"
+                
+                ".loop:                 \n\t"
+                "mov bl, [rsi]          \n\t"
+                "cmp bl, 0              \n\t"
+                "je .End                \n\t"
+                "inc rsi                \n\t"
+                "inc eax                \n\t"
+                "jmp .loop              \n\t"
+                ".End:                  \n\t"
+
+                ".att_syntax prefix     \n\t"
+                : "=a" (result)
+                : "S" (str), "a" (result)
+                : "bl"
+    );
+	return result;
+
+}
+
+unsigned int hash_ascii_sum (const char* str)
+{
+	int result = 0;
+/*
+    while (*str != 0)
+    {
+        result += *str;
+        str++;
+    }
+*/
+
+        __asm__ volatile (   
+                ".intel_syntax noprefix \n\t"
+                
+                "xor ebx, ebx           \n\t"
+                ".loop1:                \n\t"
+                "mov bl, [rsi]          \n\t"
+                "cmp bl, 0              \n\t"
+                "je .End1               \n\t"
+                "add eax, ebx           \n\t"
+                "inc rsi                \n\t"
+                "jmp .loop1             \n\t"
+                ".End1:                 \n\t"
+
+                ".att_syntax prefix     \n\t"
+                : "=a" (result)
+                : "S" (str), "a" (result)
+                : "ebx"
+    );
+
+	return result % table_height;
+}
+
+unsigned int hash_ascii_length (const char* str)
+{
+    /*
+	int length = hash_length (str);
+	int sum = hash_ascii_sum (str);
+*/
+    unsigned int sum = 0;
+    unsigned int length = 0;
+
+    __asm__ volatile (   
+        ".intel_syntax noprefix \n\t"
+    
+        "xor ebx, ebx           \n\t"
+        ".loop2:                \n\t"
+        "mov bl, [rsi]          \n\t"
+        "cmp bl, 0              \n\t"
+        "je .End2               \n\t"
+        "add eax, ebx           \n\t"
+        "inc ecx                \n\t"
+        "inc rsi                \n\t"
+        "jmp .loop2             \n\t"
+        ".End2:                 \n\t"
+
+        ".att_syntax prefix     \n\t"
+        : "=a" (sum), "=c" (length)
+        : "S" (str), "a" (sum), "c" (length)
+        : "ebx"
+    );
+
+	return sum / length;
+}
+
+unsigned int hash_xor (const char* str)
+{
+	unsigned int result = 0;
+
+	char* ptr = (char*) str;
+	while (*ptr != 0)
+	{
+		result ^= *ptr;
+		result <<= 1;
+		++ptr;
+	}
+
+	return result % table_height;
+}
+
+
+unsigned int MurmurHash2 (const char* str)
+{
+	int len = hash_length (str);
+	unsigned int seed = 272727;
+
+	const unsigned int m = 0x5bd1e995;
+	const int r = 24;
+
+	char* ptr = (char*) str;
+	unsigned int h = seed ^ len;
+
+	while (len >= 4)
+	{
+		unsigned int k = *(unsigned int *)ptr;
+
+		k *= m; 
+		k ^= k >> r; 
+		k *= m; 
+		
+		h *= m; 
+		h ^= k;
+
+		ptr += 4;
+		len -= 4;
+	}
+
+	switch(len)
+	{
+	case 3: h ^= ptr[2] << 16;
+	case 2: h ^= ptr[1] << 8;
+	case 1: h ^= ptr[0];
+	        h *= m;
+	};
+	h ^= h >> 13;
+	h *= m;
+	h ^= h >> 15;
+
+	return h % table_height;
+}
+
+unsigned int __crc32 (const char* str)
+{
+    int length = hash_length (str);
+    
+    unsigned int result = 0;
+
+    for (int i = 0; i < length; ++i)
+        result = _mm_crc32_u16 (result, str[i]);
+
+    return result % table_height;
+}
+
+template <typename Type>
+Hash_Table <Type> :: Hash_Table()
+{
+	this->array = new List<Type>* [max_elem];
+		
+	func_array[0] = hash_default;
+	func_array[1] = hash_ascii_sum;
+	func_array[2] = hash_length;
+	func_array[3] = hash_ascii_length;
+	func_array[4] = hash_xor;
+	func_array[5] = MurmurHash2;
+    func_array[6] = __crc32;
+};
 
 
 template <typename Type>
@@ -541,7 +714,7 @@ void Hash_Table <Type>::remove (Type new_elem)
     int size = list1->size;
 
     for (int i = 1; i <= size; ++i)
-    if (compare_elem (list1->data[i], new_elem))
+    if (!compare_elem (list1->data[i], new_elem))
         list1->Delete (i);
 }
 
@@ -555,7 +728,7 @@ Type* Hash_Table<Type>::find (Type elem)
     int size = list1->size;
 
     for (int i = 1; i <= size; ++i)
-        if (compare_elem (list1->data[i], elem))
+        if (!compare_elem (list1->data[i], elem))
             return &(list1->data[i]);
 
     return NULL;
