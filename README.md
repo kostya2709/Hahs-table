@@ -17,12 +17,12 @@ This is an implementation of a hash-table using two-linked list.
 
 10000 times checking words of all the text:
 
-| Hash-function  |  -O3  | -O0 + asm__   |
+| Hash-function  |  -O3  | -O3 + asm__   |
 | -------------- | ----- | ------------- |
-| Always 1       |  0.714| 
-| Sum of ASCII   |  5.901|
-| Length         |  5.355|
-| ASCII-sum / len|  7.051|
-| Rolling xor    |  6.165|
-| Murmur Hash2   |  7.562|
-| crc32          |  6.233|
+| Always 1       |  0.714|         1.589 |
+| Sum of ASCII   |  5.901|         1.595 |
+| Length         |  5.355|         1.657 |
+| ASCII-sum / len|  7.051|         2.113 |
+| Rolling xor    |  6.165|         1.593 |
+| Murmur Hash2   |  7.562|         1.799 |
+| crc32          |  6.233|         1.909 |
